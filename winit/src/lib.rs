@@ -19,7 +19,7 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 pub use iced_debug as debug;
-use iced_debug::core::window::MonitorInfo;
+use iced_debug::core::window::MonitorList;
 pub use iced_program as program;
 pub use program::core;
 pub use program::graphics;
@@ -407,10 +407,10 @@ where
                                 }
                             }
                             Control::ListMonitors(on_done) => {
-                                let monitors = event_loop
-                                    .available_monitors()
-                                    .map(crate::conversion::monitor_info)
-                                    .collect::<Vec<_>>();
+                                let monitors = crate::conversion::monitor_list(
+                                    event_loop.available_monitors(),
+                                    event_loop.primary_monitor(),
+                                );
 
                                 let _ = on_done.send(monitors);
                             }
@@ -472,7 +472,7 @@ enum Control {
         scale_factor: f32,
     },
     SetAutomaticWindowTabbing(bool),
-    ListMonitors(oneshot::Sender<Vec<MonitorInfo>>),
+    ListMonitors(oneshot::Sender<MonitorList>),
 }
 
 async fn run_instance<P>(

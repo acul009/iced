@@ -2,6 +2,8 @@
 //!
 //! [`winit`]: https://github.com/rust-windowing/winit
 //! [`iced_runtime`]: https://github.com/iced-rs/iced/tree/master/runtime
+use iced_debug::core::window::MonitorList;
+
 use crate::core::input_method;
 use crate::core::keyboard;
 use crate::core::mouse;
@@ -439,25 +441,35 @@ pub fn window_theme(mode: theme::Mode) -> Option<winit::window::Theme> {
     }
 }
 
-/// Converts a [`winit`] monitor handle into a [`window::MonitorInfo`].
+/// Converts an iterator of  [`winit`] monitor handles and the primary monitor handle into a [`window::MonitorList`].
 ///
 /// [`winit`]: https://github.com/rust-windowing/winit
-pub fn monitor_info(
-    handle: winit::monitor::MonitorHandle,
-) -> window::MonitorInfo {
-    let size = handle.size();
-    let position = handle.position();
-    let scale_factor = handle.scale_factor();
-    let name = handle.name();
-    let refresh_rate_millihertz = handle.refresh_rate_millihertz();
+pub fn monitor_list(
+    handles: impl Iterator<Item = winit::monitor::MonitorHandle>,
+    primary_monitor: Option<winit::monitor::MonitorHandle>,
+) -> window::MonitorList {
+    let mut list = MonitorList::new();
+    for handle in handles {
+        let size = handle.size();
+        let position = handle.position();
+        let scale_factor = handle.scale_factor();
+        let name = handle.name();
+        let refresh_rate_millihertz = handle.refresh_rate_millihertz();
+        let is_primary = primary_monitor
+            .as_ref()
+            .map(|p| p.name() == name)
+            .unwrap_or(false);
 
-    window::MonitorInfo::new(
-        Size::new(size.width, size.height),
-        Point::new(position.x, position.y),
-        scale_factor,
-        name,
-        refresh_rate_millihertz,
-    )
+        list.add_monitor(
+            is_primary,
+            Size::new(size.width, size.height),
+            Point::new(position.x, position.y),
+            scale_factor,
+            name,
+            refresh_rate_millihertz,
+        );
+    }
+    list
 }
 
 /// Converts a [`mouse::Interaction`] into a [`winit`] cursor icon.
