@@ -333,10 +333,26 @@ pub fn position(
     match position {
         window::Position::Default => None,
         window::Position::Specific(position) => {
-            Some(winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
-                x: f64::from(position.x),
-                y: f64::from(position.y),
-            }))
+            let position =
+                winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
+                    x: f64::from(position.x),
+                    y: f64::from(position.y),
+                });
+
+            if let Some(monitor) = monitor {
+                let start = monitor.position();
+                let position: winit::dpi::PhysicalPosition<i32> =
+                    position.to_physical(monitor.scale_factor());
+
+                Some(winit::dpi::Position::Physical(
+                    winit::dpi::PhysicalPosition {
+                        x: position.x + start.x,
+                        y: position.y + start.y,
+                    },
+                ))
+            } else {
+                Some(position)
+            }
         }
         window::Position::SpecificWith(to_position) => {
             if let Some(monitor) = monitor {
@@ -448,7 +464,7 @@ pub fn monitor_list(
     handles: impl Iterator<Item = winit::monitor::MonitorHandle>,
     primary_monitor: Option<winit::monitor::MonitorHandle>,
 ) -> window::MonitorList {
-    let mut list = MonitorList::new();
+    let mut list = MonitorList::empty();
     for handle in handles {
         let size = handle.size();
         let position = handle.position();
