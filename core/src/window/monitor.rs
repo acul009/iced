@@ -1,7 +1,10 @@
+use std::fmt::Debug;
+
 /// Provides you with information about all available monitors.
+#[derive(Debug, Clone)]
 pub struct MonitorList {
     monitors: Vec<MonitorData>,
-    primary: Option<usize>,
+    primary: Option<MonitorIndex>,
 }
 
 impl MonitorList {
@@ -27,19 +30,16 @@ impl MonitorList {
     }
 
     /// Returns the monitor at the given index, if available
-    fn get(&self, index: usize) -> Option<MonitorInfo<'_>> {
-        if index >= self.monitors.len() {
+    pub fn get(&self, index: MonitorIndex) -> Option<MonitorInfo<'_>> {
+        if index.0 >= self.monitors.len() {
             None
         } else {
-            Some(MonitorInfo {
-                list: self,
-                index: MonitorIndex(index),
-            })
+            Some(MonitorInfo { list: self, index })
         }
     }
 
     /// Creates a new empty monitor list
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Self {
             monitors: Vec::new(),
             primary: None,
@@ -57,7 +57,7 @@ impl MonitorList {
         refresh_rate_millihertz: Option<u32>,
     ) {
         if is_primary {
-            self.primary = Some(self.monitors.len());
+            self.primary = Some(MonitorIndex(self.monitors.len()));
         }
 
         self.monitors.push(MonitorData::new(
@@ -70,7 +70,8 @@ impl MonitorList {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Represents the index of a monitor in a monitor list.
 pub struct MonitorIndex(pub usize);
 
 /// Allows you to access all important information about a monitor.
@@ -130,6 +131,7 @@ impl<'a> MonitorInfo<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 struct MonitorData {
     /// The size of the monitor in physical pixels.
     physical_size: crate::Size<u32>,
