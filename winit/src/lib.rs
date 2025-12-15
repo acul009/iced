@@ -19,6 +19,7 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 pub use iced_debug as debug;
+use iced_debug::core::window::MonitorInfo;
 pub use iced_program as program;
 pub use program::core;
 pub use program::graphics;
@@ -405,6 +406,14 @@ where
                                     event_loop.set_allows_automatic_window_tabbing(_enabled);
                                 }
                             }
+                            Control::ListMonitors(on_done) => {
+                                let monitors = event_loop
+                                    .available_monitors()
+                                    .map(crate::conversion::monitor_info)
+                                    .collect::<Vec<_>>();
+
+                                let _ = on_done.send(monitors);
+                            }
                         },
                         _ => {
                             break;
@@ -463,6 +472,7 @@ enum Control {
         scale_factor: f32,
     },
     SetAutomaticWindowTabbing(bool),
+    ListMonitors(oneshot::Sender<Vec<MonitorInfo>>),
 }
 
 async fn run_instance<P>(
@@ -1297,6 +1307,11 @@ fn run_action<'a, P, C>(
                     .expect("Send control action");
 
                 *is_window_opening = true;
+            }
+            window::Action::ListMonitors(channel) => {
+                control_sender
+                    .start_send(Control::ListMonitors(channel))
+                    .expect("Send control action");
             }
             window::Action::Close(id) => {
                 let _ = ui_caches.remove(&id);

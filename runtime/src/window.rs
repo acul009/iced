@@ -1,7 +1,8 @@
 //! Build window-based GUI applications.
 use crate::core::time::Instant;
 use crate::core::window::{
-    Direction, Event, Icon, Id, Level, Mode, Screenshot, Settings, UserAttention,
+    Direction, Event, Icon, Id, Level, Mode, MonitorInfo, Screenshot, Settings,
+    UserAttention,
 };
 use crate::core::{Point, Size};
 use crate::futures::Subscription;
@@ -187,6 +188,9 @@ pub enum Action {
 
     /// Recompute the layouts of all the windows.
     RelayoutAll,
+
+    /// Lists all monitors with positions, resolutions and scaling factors.
+    ListMonitors(oneshot::Sender<Vec<MonitorInfo>>),
 }
 
 /// A window managed by iced.
@@ -275,6 +279,13 @@ pub fn open(settings: Settings) -> (Id, Task<Id>) {
         id,
         task::oneshot(|channel| crate::Action::Window(Action::Open(id, settings, channel))),
     )
+}
+
+/// Lists all available monitors.
+pub fn list_monitors() -> Task<Vec<MonitorInfo>> {
+    task::oneshot(|channel| {
+        crate::Action::Window(Action::ListMonitors(channel))
+    })
 }
 
 /// Closes the window with `id`.

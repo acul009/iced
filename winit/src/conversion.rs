@@ -439,6 +439,27 @@ pub fn window_theme(mode: theme::Mode) -> Option<winit::window::Theme> {
     }
 }
 
+/// Converts a [`winit`] monitor handle into a [`window::MonitorInfo`].
+///
+/// [`winit`]: https://github.com/rust-windowing/winit
+pub fn monitor_info(
+    handle: winit::monitor::MonitorHandle,
+) -> window::MonitorInfo {
+    let size = handle.size();
+    let position = handle.position();
+    let scale_factor = handle.scale_factor();
+    let name = handle.name();
+    let refresh_rate_millihertz = handle.refresh_rate_millihertz();
+
+    window::MonitorInfo::new(
+        Size::new(size.width, size.height),
+        Point::new(position.x, position.y),
+        scale_factor,
+        name,
+        refresh_rate_millihertz,
+    )
+}
+
 /// Converts a [`mouse::Interaction`] into a [`winit`] cursor icon.
 ///
 /// [`winit`]: https://github.com/rust-windowing/winit
