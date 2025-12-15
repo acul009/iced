@@ -7,7 +7,10 @@ pub struct MonitorList {
 impl MonitorList {
     /// Iterates over all monitors
     pub fn iter(&self) -> impl Iterator<Item = MonitorInfo<'_>> {
-        (0..self.monitors.len()).map(|index| MonitorInfo { list: self, index })
+        (0..self.monitors.len()).map(|index| MonitorInfo {
+            list: self,
+            index: MonitorIndex(index),
+        })
     }
 
     /// Returns the primary monitor, if available
@@ -19,16 +22,19 @@ impl MonitorList {
     pub fn primary_or_first(&self) -> MonitorInfo<'_> {
         self.primary().unwrap_or_else(|| MonitorInfo {
             list: self,
-            index: 0,
+            index: MonitorIndex(0),
         })
     }
 
     /// Returns the monitor at the given index, if available
-    pub fn get(&self, index: usize) -> Option<MonitorInfo<'_>> {
+    fn get(&self, index: usize) -> Option<MonitorInfo<'_>> {
         if index >= self.monitors.len() {
             None
         } else {
-            Some(MonitorInfo { list: self, index })
+            Some(MonitorInfo {
+                list: self,
+                index: MonitorIndex(index),
+            })
         }
     }
 
@@ -64,15 +70,18 @@ impl MonitorList {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct MonitorIndex(pub usize);
+
 /// Allows you to access all important information about a monitor.
 pub struct MonitorInfo<'a> {
     list: &'a MonitorList,
-    index: usize,
+    index: MonitorIndex,
 }
 
 impl<'a> MonitorInfo<'a> {
     fn monitor(&self) -> &MonitorData {
-        &self.list.monitors[self.index]
+        &self.list.monitors[self.index.0]
     }
 
     /// Returns the size of the monitor in logical pixels by applying the scale factor of the monitor to it's physical size.
@@ -85,6 +94,24 @@ impl<'a> MonitorInfo<'a> {
         let height =
             monitor.physical_size.height as f32 * monitor.scale_factor as f32;
         crate::Size::new(width, height)
+    }
+
+    /// Returns the size of the monitor in physical pixels. In most cases you should use `size` instead.
+    pub fn physical_size(&self) -> crate::Size<u32> {
+        self.monitor().physical_size
+    }
+
+    /// Returns the position of the monitor in physical pixels. This is usually not needed.
+    ///
+    /// If you want to position your windows on this monitor,
+    /// you can instead use the `index()` method and hand that to the window on creation.
+    pub fn physical_position(&self) -> crate::Point<i32> {
+        self.monitor().physical_position
+    }
+
+    /// Returns the index of the monitor. You can use this when creating a new window.
+    pub fn index(&self) -> MonitorIndex {
+        self.index.clone()
     }
 
     /// Returns the scale factor of the monitor.

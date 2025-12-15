@@ -297,16 +297,32 @@ where
                                 settings,
                                 title,
                                 scale_factor,
-                                monitor,
+                                last_monitor,
                                 on_open,
                             } => {
-                                let exit_on_close_request = settings.exit_on_close_request;
+                                let requested_monitor = if let Some(index) =
+                                    &settings.monitor_index
+                                {
+                                    event_loop
+                                        .available_monitors()
+                                        .skip(index.0)
+                                        .next()
+                                } else {
+                                    None
+                                };
+                                let monitor = requested_monitor
+                                    .or(last_monitor)
+                                    .or(event_loop.primary_monitor());
+
+                                let exit_on_close_request =
+                                    settings.exit_on_close_request;
 
                                 let visible = settings.visible;
 
                                 #[cfg(target_arch = "wasm32")]
                                 let target = settings.platform_specific.target.clone();
 
+<<<<<<< HEAD
                                 let window_attributes = conversion::window_attributes(
                                     settings,
                                     &title,
@@ -315,6 +331,17 @@ where
                                     self.id.clone(),
                                 )
                                 .with_visible(false);
+=======
+                                let window_attributes =
+                                    conversion::window_attributes(
+                                        settings,
+                                        &title,
+                                        scale_factor,
+                                        monitor,
+                                        self.id.clone(),
+                                    )
+                                    .with_visible(false);
+>>>>>>> 96453b55 (testing monitor index)
 
                                 #[cfg(target_arch = "wasm32")]
                                 let window_attributes = {
@@ -467,7 +494,7 @@ enum Control {
         id: window::Id,
         settings: window::Settings,
         title: String,
-        monitor: Option<winit::monitor::MonitorHandle>,
+        last_monitor: Option<winit::monitor::MonitorHandle>,
         on_open: oneshot::Sender<window::Id>,
         scale_factor: f32,
     },
@@ -1293,7 +1320,7 @@ fn run_action<'a, P, C>(
         },
         Action::Window(action) => match action {
             window::Action::Open(id, settings, channel) => {
-                let monitor = window_manager.last_monitor();
+                let last_monitor = window_manager.last_monitor();
 
                 control_sender
                     .start_send(Control::CreateWindow {
@@ -1301,7 +1328,7 @@ fn run_action<'a, P, C>(
                         settings,
                         title: program.title(id),
                         scale_factor: program.scale_factor(id),
-                        monitor,
+                        last_monitor,
                         on_open: channel,
                     })
                     .expect("Send control action");
