@@ -72,13 +72,6 @@ impl Example {
                 };
 
                 window::position(*last_window)
-<<<<<<< HEAD
-                    .then(|last_position| {
-                        let position =
-                            last_position.map_or(window::Position::Default, |last_position| {
-                                window::Position::Specific(last_position + Vector::new(20.0, 20.0))
-                            });
-=======
                     .then(move |last_position| {
                         let position = last_position.map_or(
                             window::Position::Default,
@@ -88,7 +81,6 @@ impl Example {
                                 )
                             },
                         );
->>>>>>> aca032c9 (open on other monitor, but not very nicely...)
 
                         let (_, open) = window::open(window::Settings {
                             position,
