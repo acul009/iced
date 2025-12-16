@@ -332,12 +332,13 @@ pub fn position(
 ) -> Option<winit::dpi::Position> {
     match position {
         window::Position::Default => None,
+        // The requested monitor index has already been fetched from the event loop and placed in `monitor`.
+        // So there is no use for the monitor index here.
         window::Position::Specific(position) => {
-            let position =
-                winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
-                    x: f64::from(position.x),
-                    y: f64::from(position.y),
-                });
+            let position = winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
+                x: f64::from(position.position.x),
+                y: f64::from(position.position.y),
+            });
 
             if let Some(monitor) = monitor {
                 let start = monitor.position();
@@ -352,31 +353,6 @@ pub fn position(
                 ))
             } else {
                 Some(position)
-            }
-        }
-        window::Position::SpecificWith(to_position) => {
-            if let Some(monitor) = monitor {
-                let start = monitor.position();
-
-                let resolution: winit::dpi::LogicalSize<f32> =
-                    monitor.size().to_logical(monitor.scale_factor());
-
-                let position = to_position(size, Size::new(resolution.width, resolution.height));
-
-                let centered: winit::dpi::PhysicalPosition<i32> = winit::dpi::LogicalPosition {
-                    x: position.x,
-                    y: position.y,
-                }
-                .to_physical(monitor.scale_factor());
-
-                Some(winit::dpi::Position::Physical(
-                    winit::dpi::PhysicalPosition {
-                        x: start.x + centered.x,
-                        y: start.y + centered.y,
-                    },
-                ))
-            } else {
-                None
             }
         }
         window::Position::Centered => {
@@ -467,7 +443,6 @@ pub fn monitor_list(
     let mut list = MonitorList::empty();
     for handle in handles {
         let size = handle.size();
-        let position = handle.position();
         let scale_factor = handle.scale_factor();
         let name = handle.name();
         let refresh_rate_millihertz = handle.refresh_rate_millihertz();
@@ -479,7 +454,6 @@ pub fn monitor_list(
         list.add_monitor(
             is_primary,
             Size::new(size.width, size.height),
-            Point::new(position.x, position.y),
             scale_factor,
             name,
             refresh_rate_millihertz,

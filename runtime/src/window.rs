@@ -1,8 +1,7 @@
 //! Build window-based GUI applications.
 use crate::core::time::Instant;
 use crate::core::window::{
-    Direction, Event, Icon, Id, Level, Mode, Screenshot, Settings,
-    UserAttention,
+    Direction, Event, Icon, Id, Level, Mode, Screenshot, Settings, UserAttention,
 };
 use crate::core::{Point, Size};
 use crate::futures::Subscription;
@@ -10,7 +9,7 @@ use crate::futures::event;
 use crate::futures::futures::channel::oneshot;
 use crate::task::{self, Task};
 
-use iced_core::window::MonitorList;
+use iced_core::window::{MonitorList, PositionOnMonitor};
 pub use raw_window_handle;
 
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -65,7 +64,7 @@ pub enum Action {
     Minimize(Id, bool),
 
     /// Get the current logical coordinates of the window.
-    GetPosition(Id, oneshot::Sender<Option<Point>>),
+    GetPosition(Id, oneshot::Sender<Option<PositionOnMonitor>>),
 
     /// Get the current scale factor (DPI) of the window.
     GetScaleFactor(Id, oneshot::Sender<f32>),
@@ -284,9 +283,7 @@ pub fn open(settings: Settings) -> (Id, Task<Id>) {
 
 /// Lists all available monitors.
 pub fn list_monitors() -> Task<MonitorList> {
-    task::oneshot(|channel| {
-        crate::Action::Window(Action::ListMonitors(channel))
-    })
+    task::oneshot(|channel| crate::Action::Window(Action::ListMonitors(channel)))
 }
 
 /// Closes the window with `id`.
@@ -369,7 +366,7 @@ pub fn minimize<T>(id: Id, minimized: bool) -> Task<T> {
 }
 
 /// Gets the position in logical coordinates of the window with the given [`Id`].
-pub fn position(id: Id) -> Task<Option<Point>> {
+pub fn position(id: Id) -> Task<Option<PositionOnMonitor>> {
     task::oneshot(move |channel| crate::Action::Window(Action::GetPosition(id, channel)))
 }
 

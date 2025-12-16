@@ -25,7 +25,6 @@ mod platform;
 mod platform;
 
 use crate::Size;
-use crate::window::monitor::MonitorIndex;
 use crate::window::{Icon, Level, Position};
 
 pub use platform::PlatformSpecific;
@@ -99,12 +98,6 @@ pub struct Settings {
     ///
     /// By default this is enabled.
     pub exit_on_close_request: bool,
-
-    /// The index of the monitor to use for the window.
-    ///
-    /// If `None`, the window will be placed on the primary monitor.
-    /// You can get a list of available monitors using the `window::available_monitors` command
-    pub monitor_index: Option<MonitorIndex>,
 }
 
 impl Default for Settings {
@@ -127,7 +120,6 @@ impl Default for Settings {
             icon: None,
             exit_on_close_request: true,
             platform_specific: PlatformSpecific::default(),
-            monitor_index: None,
         }
     }
 }

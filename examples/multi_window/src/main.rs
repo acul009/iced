@@ -1,11 +1,8 @@
 use iced::widget::{
-    button, center, center_x, column, container, operation, pick_list, row,
-    scrollable, space, text, text_input,
+    button, center, center_x, column, container, operation, scrollable, space, text, text_input,
 };
-use iced::window::{self, MonitorIndex, MonitorInfo, MonitorList};
-use iced::{
-    Center, Element, Fill, Function, Subscription, Task, Theme, Vector,
-};
+use iced::window::{self, MonitorIndex, MonitorList};
+use iced::{Center, Element, Fill, Function, Subscription, Task, Theme, Vector};
 
 use std::collections::BTreeMap;
 
@@ -73,18 +70,12 @@ impl Example {
 
                 window::position(*last_window)
                     .then(move |last_position| {
-                        let position = last_position.map_or(
-                            window::Position::Default,
-                            |last_position| {
-                                window::Position::Specific(
-                                    last_position + Vector::new(20.0, 20.0),
-                                )
-                            },
-                        );
+                        let mut position = last_position.unwrap_or_default();
+                        position.position = position.position + Vector::new(20.0, 20.0);
+                        position.monitor_index = monitor.or(position.monitor_index);
 
                         let (_, open) = window::open(window::Settings {
-                            position,
-                            monitor_index: monitor,
+                            position: position.into(),
                             ..window::Settings::default()
                         });
 
@@ -136,8 +127,7 @@ impl Example {
             Message::ListMonitors(id) => {
                 if let Some(window) = self.windows.get_mut(&id) {
                     window.monitors = None;
-                    window::list_monitors()
-                        .map(Message::MonitorsListed.with(id))
+                    window::list_monitors().map(Message::MonitorsListed.with(id))
                 } else {
                     Task::none()
                 }
@@ -210,26 +200,20 @@ impl Window {
                 .id(format!("input-{id}"))
         ];
 
-<<<<<<< HEAD
-        let new_window_button = button(text("New Window")).on_press(Message::OpenWindow);
-=======
         let monitor_select = if let Some(list) = &self.monitors {
             let column = column(list.iter().map(|monitor| {
                 button(text(
                     monitor.name().unwrap_or("Unknown Monitor").to_string(),
                 ))
-                .on_press_maybe(
-                    if self.selected_monitor != Some(monitor.index()) {
-                        Some(Message::MonitorSelected(id, monitor.index()))
-                    } else {
-                        None
-                    },
-                )
+                .on_press_maybe(if self.selected_monitor != Some(monitor.index()) {
+                    Some(Message::MonitorSelected(id, monitor.index()))
+                } else {
+                    None
+                })
                 .into()
             }))
             .push(button("Refresh").on_press(Message::ListMonitors(id)))
             .spacing(10);
->>>>>>> aca032c9 (open on other monitor, but not very nicely...)
 
             Element::new(column)
         } else {
@@ -238,19 +222,14 @@ impl Window {
                 .into()
         };
 
-        let new_window_button = button(text("New Window"))
-            .on_press(Message::OpenWindow(self.selected_monitor));
+        let new_window_button =
+            button(text("New Window")).on_press(Message::OpenWindow(self.selected_monitor));
 
-        let content = column![
-            scale_input,
-            title_input,
-            monitor_select,
-            new_window_button
-        ]
-        .spacing(50)
-        .width(Fill)
-        .align_x(Center)
-        .width(200);
+        let content = column![scale_input, title_input, monitor_select, new_window_button]
+            .spacing(50)
+            .width(Fill)
+            .align_x(Center)
+            .width(200);
 
         container(scrollable(center_x(content))).padding(10).into()
     }

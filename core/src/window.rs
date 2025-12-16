@@ -20,7 +20,7 @@ pub use id::Id;
 pub use level::Level;
 pub use mode::Mode;
 pub use monitor::{MonitorIndex, MonitorInfo, MonitorList};
-pub use position::Position;
+pub use position::{Position, PositionOnMonitor};
 pub use redraw_request::RedrawRequest;
 pub use screenshot::Screenshot;
 pub use settings::Settings;

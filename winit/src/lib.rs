@@ -19,7 +19,9 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 pub use iced_debug as debug;
+use iced_debug::core::window::MonitorIndex;
 use iced_debug::core::window::MonitorList;
+use iced_debug::core::window::PositionOnMonitor;
 pub use iced_program as program;
 pub use program::core;
 pub use program::graphics;
@@ -37,6 +39,7 @@ mod window;
 pub use clipboard::Clipboard;
 pub use error::Error;
 pub use proxy::Proxy;
+use winit::dpi::PhysicalPosition;
 
 use crate::core::mouse;
 use crate::core::renderer;
@@ -300,48 +303,36 @@ where
                                 last_monitor,
                                 on_open,
                             } => {
-                                let requested_monitor = if let Some(index) =
-                                    &settings.monitor_index
-                                {
-                                    event_loop
-                                        .available_monitors()
-                                        .skip(index.0)
-                                        .next()
-                                } else {
-                                    None
+                                let requested_monitor = match settings.position {
+                                    core::window::Position::Default => None,
+                                    core::window::Position::Centered => None,
+                                    core::window::Position::Specific(position) => position
+                                        .monitor_index
+                                        .map(|index| {
+                                            event_loop.available_monitors().skip(index.0).next()
+                                        })
+                                        .flatten(),
                                 };
+
                                 let monitor = requested_monitor
                                     .or(last_monitor)
                                     .or(event_loop.primary_monitor());
 
-                                let exit_on_close_request =
-                                    settings.exit_on_close_request;
+                                let exit_on_close_request = settings.exit_on_close_request;
 
                                 let visible = settings.visible;
 
                                 #[cfg(target_arch = "wasm32")]
                                 let target = settings.platform_specific.target.clone();
 
-<<<<<<< HEAD
                                 let window_attributes = conversion::window_attributes(
                                     settings,
                                     &title,
                                     scale_factor,
-                                    monitor.or(event_loop.primary_monitor()),
+                                    monitor,
                                     self.id.clone(),
                                 )
                                 .with_visible(false);
-=======
-                                let window_attributes =
-                                    conversion::window_attributes(
-                                        settings,
-                                        &title,
-                                        scale_factor,
-                                        monitor,
-                                        self.id.clone(),
-                                    )
-                                    .with_visible(false);
->>>>>>> 96453b55 (testing monitor index)
 
                                 #[cfg(target_arch = "wasm32")]
                                 let window_attributes = {
@@ -1463,13 +1454,36 @@ fn run_action<'a, P, C>(
                         .raw
                         .outer_position()
                         .map(|position| {
+                            let position = match window.raw.current_monitor() {
+                                Some(current_monitor) => PhysicalPosition {
+                                    x: position.x - current_monitor.position().x,
+                                    y: position.y - current_monitor.position().y,
+                                },
+                                None => position,
+                            };
                             let position = position.to_logical::<f32>(window.raw.scale_factor());
 
                             Point::new(position.x, position.y)
                         })
                         .ok();
 
-                    let _ = channel.send(position);
+                    let monitor_index = window
+                        .raw
+                        .current_monitor()
+                        .map(|monitor| {
+                            window
+                                .raw
+                                .available_monitors()
+                                .enumerate()
+                                .find(|(_, handle)| handle == &monitor)
+                                .map(|(index, _)| MonitorIndex(index))
+                        })
+                        .flatten();
+
+                    let _ = channel.send(position.map(|position| PositionOnMonitor {
+                        monitor_index,
+                        position,
+                    }));
                 }
             }
             window::Action::GetScaleFactor(id, channel) => {
