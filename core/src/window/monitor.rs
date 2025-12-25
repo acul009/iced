@@ -9,32 +9,32 @@ pub struct MonitorList {
 
 impl MonitorList {
     /// Iterates over all monitors
-    pub fn iter(&self) -> impl Iterator<Item = MonitorInfo<'_>> {
-        (0..self.monitors.len()).map(|index| MonitorInfo {
+    pub fn iter(&self) -> impl Iterator<Item = MonitorRef<'_>> {
+        (0..self.monitors.len()).map(|index| MonitorRef {
             list: self,
             index: MonitorIndex(index),
         })
     }
 
     /// Returns the primary monitor, if available
-    pub fn primary(&self) -> Option<MonitorInfo<'_>> {
+    pub fn primary(&self) -> Option<MonitorRef<'_>> {
         self.get(self.primary?)
     }
 
     /// Returns the primary monitor, or the first monitor if no primary is available
-    pub fn primary_or_first(&self) -> MonitorInfo<'_> {
-        self.primary().unwrap_or_else(|| MonitorInfo {
+    pub fn primary_or_first(&self) -> MonitorRef<'_> {
+        self.primary().unwrap_or_else(|| MonitorRef {
             list: self,
             index: MonitorIndex(0),
         })
     }
 
     /// Returns the monitor at the given index, if available
-    pub fn get(&self, index: MonitorIndex) -> Option<MonitorInfo<'_>> {
+    pub fn get(&self, index: MonitorIndex) -> Option<MonitorRef<'_>> {
         if index.0 >= self.monitors.len() {
             None
         } else {
-            Some(MonitorInfo { list: self, index })
+            Some(MonitorRef { list: self, index })
         }
     }
 
@@ -47,24 +47,12 @@ impl MonitorList {
     }
 
     /// Adds a new monitor to the list
-    pub fn add_monitor(
-        &mut self,
-        is_primary: bool,
-        physical_size: crate::Size<u32>,
-        scale_factor: f64,
-        name: Option<String>,
-        refresh_rate_millihertz: Option<u32>,
-    ) {
+    pub fn add_monitor(&mut self, is_primary: bool, monitor: MonitorData) {
         if is_primary {
             self.primary = Some(MonitorIndex(self.monitors.len()));
         }
 
-        self.monitors.push(MonitorData::new(
-            physical_size,
-            scale_factor,
-            name,
-            refresh_rate_millihertz,
-        ));
+        self.monitors.push(monitor);
     }
 }
 
@@ -72,13 +60,14 @@ impl MonitorList {
 /// Represents the index of a monitor in a monitor list.
 pub struct MonitorIndex(pub usize);
 
-/// Allows you to access all important information about a monitor.
-pub struct MonitorInfo<'a> {
+/// A reference to a monitor in a monitor list.
+/// Allows you to access all important information from said monitor as well as its index.
+pub struct MonitorRef<'a> {
     list: &'a MonitorList,
     index: MonitorIndex,
 }
 
-impl<'a> MonitorInfo<'a> {
+impl<'a> MonitorRef<'a> {
     fn monitor(&self) -> &MonitorData {
         &self.list.monitors[self.index.0]
     }
@@ -87,10 +76,7 @@ impl<'a> MonitorInfo<'a> {
     ///
     /// **WARNING**: this ignores the scale factor you might have set for a **window**.
     pub fn size(&self) -> crate::Size {
-        let monitor = self.monitor();
-        let width = monitor.physical_size.width as f32 * monitor.scale_factor as f32;
-        let height = monitor.physical_size.height as f32 * monitor.scale_factor as f32;
-        crate::Size::new(width, height)
+        self.monitor().size()
     }
 
     /// Returns the index of the monitor. You can use this when creating a new window.
@@ -100,22 +86,28 @@ impl<'a> MonitorInfo<'a> {
 
     /// Returns the scale factor of the monitor.
     pub fn scale_factor(&self) -> f64 {
-        self.monitor().scale_factor
+        self.monitor().scale_factor()
     }
 
     /// Returns the name of the monitor.
     pub fn name(&self) -> Option<&str> {
-        self.monitor().name.as_deref()
+        self.monitor().name()
     }
 
     /// Returns the refresh rate of the monitor in millihertz.
     pub fn refresh_rate_millihertz(&self) -> Option<u32> {
-        self.monitor().refresh_rate_millihertz
+        self.monitor().refresh_rate_millihertz()
+    }
+
+    /// Returns whether the monitor is the primary monitor.
+    pub fn is_primary(&self) -> bool {
+        Some(self.index) == self.list.primary
     }
 }
 
 #[derive(Debug, Clone)]
-struct MonitorData {
+/// Contains all the important information about a monitor
+pub struct MonitorData {
     /// The size of the monitor in physical pixels.
     physical_size: crate::Size<u32>,
     /// The position of the monitor in physical pixels.
@@ -139,5 +131,29 @@ impl MonitorData {
             name,
             refresh_rate_millihertz,
         }
+    }
+
+    /// Returns the size of the monitor in logical pixels by applying the scale factor of the monitor to it's physical size.
+    ///
+    /// **WARNING**: this ignores the scale factor you might have set for a **window**.
+    pub fn size(&self) -> crate::Size {
+        let width = self.physical_size.width as f32 * self.scale_factor as f32;
+        let height = self.physical_size.height as f32 * self.scale_factor as f32;
+        crate::Size::new(width, height)
+    }
+
+    /// Returns the scale factor of the monitor.
+    pub fn scale_factor(&self) -> f64 {
+        self.scale_factor
+    }
+
+    /// Returns the name of the monitor.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Returns the refresh rate of the monitor in millihertz.
+    pub fn refresh_rate_millihertz(&self) -> Option<u32> {
+        self.refresh_rate_millihertz
     }
 }

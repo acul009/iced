@@ -42,3 +42,9 @@ impl From<PositionOnMonitor> for Position {
         Position::Specific(position_on_monitor)
     }
 }
+
+impl From<Point> for Position {
+    fn from(position: Point) -> Self {
+        Position::Specific(position.into())
+    }
+}

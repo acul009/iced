@@ -9,7 +9,7 @@ use crate::futures::event;
 use crate::futures::futures::channel::oneshot;
 use crate::task::{self, Task};
 
-use iced_core::window::{MonitorList, PositionOnMonitor};
+use iced_core::window::{MonitorData, MonitorList, PositionOnMonitor};
 pub use raw_window_handle;
 
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -176,7 +176,7 @@ pub enum Action {
     SetResizeIncrements(Id, Option<Size>),
 
     /// Get the logical dimensions of the monitor containing the window with the given [`Id`].
-    GetMonitorSize(Id, oneshot::Sender<Option<Size>>),
+    GetMonitor(Id, oneshot::Sender<Option<MonitorData>>),
 
     /// Set whether the system can automatically organize windows into tabs.
     ///
@@ -485,8 +485,8 @@ pub fn disable_mouse_passthrough<Message>(id: Id) -> Task<Message> {
 }
 
 /// Gets the logical dimensions of the monitor containing the window with the given [`Id`].
-pub fn monitor_size(id: Id) -> Task<Option<Size>> {
-    task::oneshot(move |channel| crate::Action::Window(Action::GetMonitorSize(id, channel)))
+pub fn monitor(id: Id) -> Task<Option<MonitorData>> {
+    task::oneshot(move |channel| crate::Action::Window(Action::GetMonitor(id, channel)))
 }
 
 /// Sets whether the system can automatically organize windows into tabs.

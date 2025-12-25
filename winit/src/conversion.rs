@@ -2,6 +2,7 @@
 //!
 //! [`winit`]: https://github.com/rust-windowing/winit
 //! [`iced_runtime`]: https://github.com/iced-rs/iced/tree/master/runtime
+use iced_debug::core::window::MonitorData;
 use iced_debug::core::window::MonitorList;
 
 use crate::core::input_method;
@@ -442,24 +443,32 @@ pub fn monitor_list(
 ) -> window::MonitorList {
     let mut list = MonitorList::empty();
     for handle in handles {
-        let size = handle.size();
-        let scale_factor = handle.scale_factor();
-        let name = handle.name();
-        let refresh_rate_millihertz = handle.refresh_rate_millihertz();
         let is_primary = primary_monitor
             .as_ref()
-            .map(|p| p.name() == name)
+            .map(|p| Some(p) == primary_monitor.as_ref())
             .unwrap_or(false);
 
-        list.add_monitor(
-            is_primary,
-            Size::new(size.width, size.height),
-            scale_factor,
-            name,
-            refresh_rate_millihertz,
-        );
+        let monitor_data = monitor(handle);
+
+        list.add_monitor(is_primary, monitor_data);
     }
     list
+}
+
+/// Converts a [`winit`] monitor handle into a [`window::MonitorData`] by reading all relevant monitor properties.
+///
+/// [`winit`]: https://github.com/rust-windowing/winit
+pub fn monitor(handle: winit::monitor::MonitorHandle) -> MonitorData {
+    let physical_size = handle.size();
+    let physical_size = Size {
+        width: physical_size.width,
+        height: physical_size.height,
+    };
+    let scale_factor = handle.scale_factor();
+    let name = handle.name();
+    let refresh_rate_millihertz = handle.refresh_rate_millihertz();
+
+    MonitorData::new(physical_size, scale_factor, name, refresh_rate_millihertz)
 }
 
 /// Converts a [`mouse::Interaction`] into a [`winit`] cursor icon.

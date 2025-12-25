@@ -1599,16 +1599,11 @@ fn run_action<'a, P, C>(
                     let _ = window.raw.set_cursor_hittest(true);
                 }
             }
-            window::Action::GetMonitorSize(id, channel) => {
+            window::Action::GetMonitor(id, channel) => {
                 if let Some(window) = window_manager.get(id) {
-                    let size = window.raw.current_monitor().map(|monitor| {
-                        let scale = window.state.scale_factor();
-                        let size = monitor.size().to_logical(f64::from(scale));
+                    let monitor_data = window.raw.current_monitor().map(conversion::monitor);
 
-                        Size::new(size.width, size.height)
-                    });
-
-                    let _ = channel.send(size);
+                    let _ = channel.send(monitor_data);
                 }
             }
             window::Action::SetAllowAutomaticTabbing(enabled) => {
