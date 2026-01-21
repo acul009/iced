@@ -1,9 +1,9 @@
 //! Build window-based GUI applications.
+use crate::core::Size;
 use crate::core::time::Instant;
 use crate::core::window::{
     Direction, Event, Icon, Id, Level, Mode, Screenshot, Settings, UserAttention,
 };
-use crate::core::{Point, Size};
 use crate::futures::Subscription;
 use crate::futures::event;
 use crate::futures::futures::channel::oneshot;
@@ -72,7 +72,7 @@ pub enum Action {
     /// Move the window to the given logical coordinates.
     ///
     /// Unsupported on Wayland.
-    Move(Id, Point),
+    Move(Id, PositionOnMonitor),
 
     /// Change the [`Mode`] of the window.
     SetMode(Id, Mode),
@@ -376,7 +376,7 @@ pub fn scale_factor(id: Id) -> Task<f32> {
 }
 
 /// Moves the window to the given logical coordinates.
-pub fn move_to<T>(id: Id, position: Point) -> Task<T> {
+pub fn move_to<T>(id: Id, position: PositionOnMonitor) -> Task<T> {
     task::effect(crate::Action::Window(Action::Move(id, position)))
 }
 
