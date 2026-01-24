@@ -1495,10 +1495,16 @@ fn run_action<'a, P, C>(
             }
             window::Action::Move(id, position) => {
                 if let Some(window) = window_manager.get_mut(id) {
-                    window.raw.set_outer_position(winit::dpi::LogicalPosition {
-                        x: position.x,
-                        y: position.y,
-                    });
+                    let monitor = position
+                        .monitor_index
+                        // Option 1: try to get given monitor from index
+                        .map(|index| window.raw.available_monitors().skip(index.0).next())
+                        .flatten()
+                        // Option 2 try to get the current monitor
+                        .or_else(|| window.raw.current_monitor());
+                    let winit_position =
+                        conversion::position_on_monitor(monitor.as_ref(), position.position);
+                    window.raw.set_outer_position(winit_position);
                 }
             }
             window::Action::SetMode(id, mode) => {

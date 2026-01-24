@@ -323,6 +323,32 @@ pub fn window_level(level: window::Level) -> winit::window::WindowLevel {
     }
 }
 
+/// Converts an [`iced::Point`] into a [`winit`] logical position for a given monitor.
+///
+/// [`winit`]: https://github.com/rust-windowing/winit
+pub fn position_on_monitor(
+    monitor: Option<&winit::monitor::MonitorHandle>,
+    position: Point,
+) -> winit::dpi::Position {
+    let position = winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
+        x: f64::from(position.x),
+        y: f64::from(position.y),
+    });
+
+    if let Some(monitor) = monitor {
+        let start = monitor.position();
+        let position: winit::dpi::PhysicalPosition<i32> =
+            position.to_physical(monitor.scale_factor());
+
+        winit::dpi::Position::Physical(winit::dpi::PhysicalPosition {
+            x: position.x + start.x,
+            y: position.y + start.y,
+        })
+    } else {
+        position
+    }
+}
+
 /// Converts a [`window::Position`] into a [`winit`] logical position for a given monitor.
 ///
 /// [`winit`]: https://github.com/rust-windowing/winit
@@ -336,25 +362,7 @@ pub fn position(
         // The requested monitor index has already been fetched from the event loop and placed in `monitor`.
         // So there is no use for the monitor index here.
         window::Position::Specific(position) => {
-            let position = winit::dpi::Position::Logical(winit::dpi::LogicalPosition {
-                x: f64::from(position.position.x),
-                y: f64::from(position.position.y),
-            });
-
-            if let Some(monitor) = monitor {
-                let start = monitor.position();
-                let position: winit::dpi::PhysicalPosition<i32> =
-                    position.to_physical(monitor.scale_factor());
-
-                Some(winit::dpi::Position::Physical(
-                    winit::dpi::PhysicalPosition {
-                        x: position.x + start.x,
-                        y: position.y + start.y,
-                    },
-                ))
-            } else {
-                Some(position)
-            }
+            Some(position_on_monitor(monitor, position.position))
         }
         window::Position::Centered => {
             if let Some(monitor) = monitor {
